@@ -4,8 +4,6 @@ import net.kleditzsch.app.shcProcessEnvironment.ProcessEnvironment.ProcessEnviro
 import net.kleditzsch.app.shcProcessEnvironment.Util.GPIO.GPIO;
 import net.kleditzsch.app.shcProcessEnvironment.Util.GPIO.Pin;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * Steuert LED zum Blinken an
  */

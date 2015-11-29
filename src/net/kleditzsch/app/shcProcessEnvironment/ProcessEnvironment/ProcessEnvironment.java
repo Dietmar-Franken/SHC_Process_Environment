@@ -1,13 +1,18 @@
 package net.kleditzsch.app.shcProcessEnvironment.ProcessEnvironment;
 
+import net.kleditzsch.app.shcProcessEnvironment.Database.Redis;
 import net.kleditzsch.app.shcProcessEnvironment.Settings.Settings;
+import net.kleditzsch.app.shcProcessEnvironment.SwitchServer.SwitchServerTask;
 import net.kleditzsch.app.shcProcessEnvironment.Tasks.BlinkTask;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.InputMismatchException;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -35,10 +40,6 @@ public class ProcessEnvironment {
         Path settingsFile = Paths.get("settings.xml");
         if(arguments.contains("-c") || arguments.contains("--config") || !Files.exists(settingsFile)) {
 
-            System.out.println(arguments.contains("-c") );
-            System.out.println(arguments.contains("--config") );
-            System.out.println(!Files.exists(settingsFile) );
-
             //Konfiguration beim ersten Start durchführen
             try {
 
@@ -53,15 +54,24 @@ public class ProcessEnvironment {
             }
         }
 
-        //Shutdown Methode
-
         //TODO Schalstserver starten
+        if(Settings.getInstance().getProperty(Settings.SWITCH_SERVER_ACTIVE).equals("1")) {
+
+            SwitchServerTask switchServer = new SwitchServerTask();
+            Thread switchServerThread = new Thread(switchServer);
+            switchServerThread.start();
+            while(true);
+        }
 
         //TODO Sensortransmitter starten
 
         //TODO Sheduler starten
         if(Settings.getInstance().getProperty(Settings.SHEDULER_ACTIVE).equals("1")) {
 
+            //Datanbank initalisieren
+            Redis.getInstance();
+
+            //Executor Initalisieren
             ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
 
             //Blink LED
@@ -71,6 +81,16 @@ public class ProcessEnvironment {
                 scheduler.scheduleAtFixedRate(new BlinkTask(schedulerStateLed), 0, 1, TimeUnit.SECONDS);
             }
         }
+
+        //Shutdown Methode
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+
+            @Override
+            public void run() {
+
+                //wird vor dem Shutdown ausgeführt
+            }
+        });
 
     }
 
