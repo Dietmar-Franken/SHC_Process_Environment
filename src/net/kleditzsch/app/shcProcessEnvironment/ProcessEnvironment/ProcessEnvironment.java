@@ -4,6 +4,7 @@ import net.kleditzsch.app.shcProcessEnvironment.Database.Redis;
 import net.kleditzsch.app.shcProcessEnvironment.Settings.Settings;
 import net.kleditzsch.app.shcProcessEnvironment.SwitchServer.SwitchServerTask;
 import net.kleditzsch.app.shcProcessEnvironment.Tasks.BlinkTask;
+import net.kleditzsch.app.shcProcessEnvironment.Tasks.UserAtHomeUpdateTask;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,9 +14,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.InputMismatchException;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Zentraler Einstigspunkt in die Anwendung
@@ -23,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 public class ProcessEnvironment {
 
     private static boolean debugEnabled = false;
+
+    private static ExecutorService threadPool;
 
     public static void main(String[] args) {
 
@@ -72,14 +73,19 @@ public class ProcessEnvironment {
             Redis.getInstance();
 
             //Executor Initalisieren
-            ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
+            final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
+            threadPool = Executors.newCachedThreadPool();
 
+            /*
             //Blink LED
             int schedulerStateLed = Integer.parseInt(Settings.getInstance().getProperty(Settings.SHEDULER_STATE_LED_PIN));
             if(schedulerStateLed >= 0) {
 
                 scheduler.scheduleAtFixedRate(new BlinkTask(schedulerStateLed), 0, 1, TimeUnit.SECONDS);
-            }
+            }*/
+
+            //Benutzer zu Hause
+            scheduler.scheduleAtFixedRate(new UserAtHomeUpdateTask(), 5, 5, TimeUnit.SECONDS);
         }
 
         //Shutdown Methode
@@ -89,6 +95,11 @@ public class ProcessEnvironment {
             public void run() {
 
                 //wird vor dem Shutdown ausgeführt
+
+                //Scheduler stoppen
+
+                //Redis Verbindung beenden
+                Redis.getInstance().getConnection().close();
             }
         });
 
@@ -97,5 +108,10 @@ public class ProcessEnvironment {
     public static boolean isDebugEnabled() {
 
         return debugEnabled;
+    }
+
+    public static ExecutorService getThreadPool() {
+
+        return threadPool;
     }
 }
